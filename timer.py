@@ -9,11 +9,21 @@ else:
 with open(filename) as f:
     startTime = int(next(f).split()[-1]) # read first line
     time = []
+    outliers = 0
     for i in range(15):
         iterStart = int(next(f).split()[-1])
         iterEnd = int(next(f).split()[-1])
-        time.append(iterEnd - iterStart)
+        if (iterEnd - iterStart) < 0:
+            outliers += 1
+        else:
+            time.append(iterEnd - iterStart)
+    if outliers:
+        makeup = sum(time)/len(time)
+        for i in range(outliers):
+            time.append(makeup)
+    
     #print("Total time is: " + str(iterEnd - startTime))
     #print("Parsing time is: " + str(sum(time)))
     #print(time)
-    print(str(iterEnd - startTime) + "," + str(sum(time)))
+    if iterEnd:
+        print(str(iterEnd - startTime) + "," + str(sum(time)))
