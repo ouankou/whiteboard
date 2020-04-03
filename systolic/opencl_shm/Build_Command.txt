@@ -1,0 +1,10 @@
+g++ -I"($PATH_TO_INCLUDE)" -L($PATH_TO_LIBRARY) -lOpenCL *.cpp
+
+For AMDGPU-PRO(17.xx):
+g++ *.cpp -L/opt/amdgpu-pro/lib/x86_64-linux-gnu/ -lOpenCL
+
+
+[Downloading opencl headers using "sudo apt-get install opencl-headers" will place the header files at standard location (/usr/include/CL)]
+
+
+g++ -L/usr/local/cuda-10.2/lib64 MatrixTranspose.cpp -lOpenCL -o x.out
