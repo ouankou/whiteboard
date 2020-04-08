@@ -78,7 +78,8 @@ namespace stencil2d_9pt {
                     {
                         sum[tid] = sum[tid + 1];
                     };
-                    sum[tid] += data[1] * fn1;
+                    sum[tid] += data[0] * fn1;
+                    sum[tid] += data[1] * fn0;
                     sum[tid] += data[2] * fc;
                     sum[tid] += data[3] * fs0;
                     sum[tid] += data[4] * fs1;
