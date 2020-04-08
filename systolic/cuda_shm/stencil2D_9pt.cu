@@ -128,7 +128,7 @@ namespace stencil2d_9pt {
 		//StopWatchWin watch;
 		DataT<DataType> img;
 		char szPath[1024] = "";
-		sprintf(szPath, "../data/Lena%dx%d.raw", width, height);
+		sprintf(szPath, "../Lena_%dx%d.raw", width, height);
 		bool bRtn = img.Load_uchar(szPath, width, height);
 		//sprintf(szPath, "../data/Lena%dx%d.txt", width, height);
 		//img.SaveText(szPath);
@@ -187,11 +187,11 @@ namespace stencil2d_9pt {
 		//inc = watch.getAverageTime();
 		inc /= (float)nRepeatCount;
 		printf("%dx%d , %dx%d , proc_count=%d, cache=%d, BLOCK_SIZE=%d, %f ms , %f fps\n", width, height, FILTER_WIDTH, FILTER_HEIGHT, PROCESS_DATA_COUNT, PROCESS_DATA_COUNT + FILTER_HEIGHT - 1, BLOCK_SIZE, inc, 1000.0 / inc);
-		sprintf(szPath, "../data/Lena_proc_%dx%d.raw", width, height);
-		//imgDst.SaveRaw(szPath);
+		sprintf(szPath, "../Lena_cuda_shm_proc_%dx%d.raw", width, height);
+		imgDst.SaveRaw(szPath);
 
-		sprintf(szPath, "../data/Lena_proc_%dx%d.txt", width, height);
-		//imgDst.SaveText(szPath);
+		sprintf(szPath, "../Lena_cuda_shm_proc_%dx%d.txt", width, height);
+		imgDst.SaveText(szPath);
 
 		DataT<DataType> imgVerify;
 		imgVerify.MallocBuffer(width, height);
