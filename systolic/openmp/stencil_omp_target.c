@@ -95,7 +95,7 @@ void stencil(int n, int m, float fc,float fn0, float fs0, float fw0, float fe0, 
     //int FILTER_HEIGHT = 5;
     int width = m;
     #pragma omp target map(u,result)
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static: schedule(2)) stencil(2, filter_size[5], cross, filter(fc, fe0, ...), source, dest, n, m)
     for(int i = FILTER_WIDTH / 2; i <= n - FILTER_WIDTH / 2; i++) {
         for(int j = FILTER_HEIGHT / 2; j <= m - FILTER_HEIGHT / 2; j++){
             float sum = u[width*j+i] * fc;
@@ -112,3 +112,19 @@ void stencil(int n, int m, float fc,float fn0, float fs0, float fw0, float fe0, 
         }
     }
 }
+
+j2d9pt(const FLOAT* __restrict__ src, FLOAT* dst, int width, int height,
+    FLOAT fc, FLOAT fn0, FLOAT fs0, FLOAT fw0, FLOAT fe0, FLOAT fn1, FLOAT fs1, FLOAT fw1, FLOAT fe1) {
+    #pragma omp target parallel for map(to: src[width*height]) map(from: dst[width*height])
+
+         map(to:fc, fn0, fs0, fw0, fe0, fn1, fs1, fw1, fe1)
+
+         for (i=0; i<width; i++)
+
+            for(j=0; j<height; j++)
+
+                dst[i*width + j] = src[i*width + j] * fc + src[N0] * n0 + src[N1] * n1 + src[S0]*s0 + src[S1] * s1
+
+   
+
+    }  
