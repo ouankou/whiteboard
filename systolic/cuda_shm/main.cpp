@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+#include <dlfcn.h>
 
 extern int stencil_9pt(int argc, char** argv);
+extern int hub(int, int);
 
 int main(int argc, char** argv)
 {
@@ -26,7 +28,24 @@ int main(int argc, char** argv)
 		}\
 	}
 	
-	CALL_FUNC(9);
+    // List all the supported runtime and check in order
+    // Check if a CUDA runtime is loaded
+    void* cuda_runtime = dlopen("libcudart.so.10.1", RTLD_LAZY);
+    if (cuda_runtime == NULL)
+        printf("We do not have CUDA SHUFFLE 10.1.\n");
+
+    cuda_runtime = dlopen("libcudart.so.10.3", RTLD_LAZY);
+    if (cuda_runtime != NULL)
+        printf("We have CUDA SHUFFLE 10.3.\n");
+
+    // If there's no CUDA runtime loaded, use CPU kernel instead
+    if (cuda_runtime == NULL) {
+        int size = 4096;
+        hub(size, size);
+    }
+    else {
+	    CALL_FUNC(9);
+    };
 	printf("error, do not call functions\n");
 	return 0;
 }

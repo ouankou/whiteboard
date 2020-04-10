@@ -39,7 +39,7 @@ error:
 	$(error Invalid configuration, please check your inputs)
 endif
 
-SOURCEFILES := main.cpp stencil2D_9pt.cu
+SOURCEFILES := main.cpp stencil2D_9pt.cu stencil_cpu.cpp
 EXTERNAL_LIBS := 
 EXTERNAL_LIBS_COPIED := $(foreach lib, $(EXTERNAL_LIBS),$(BINARYDIR)/$(notdir $(lib)))
 
@@ -62,7 +62,7 @@ NVCCFLAGS += $(ARCHITECTURE)
 INCLUDE_DIRS += ../ssai-2dconv
 #LIBRARY_DIRS += /opt/intel/ipp/lib/intel64
 #LIBRARY_NAMES += ippi ipps ippcore ippvm 
-LIBRARY_NAMES += cudart
+LIBRARY_NAMES += cudart dl
 LIBRARY_DIRS += $(CUDA_HOME)/lib64
 COMMONFLAGS += -fpermissive -fopenmp -lpthread -std=c++11 -fpermissive -msse4.1
 ##########################################

@@ -18,7 +18,6 @@ namespace stencil2d_9pt {
 		const int DATA_CACHE_SIZE = PROCESS_DATA_COUNT + FILTER_HEIGHT - 1;
 
 		T data[DATA_CACHE_SIZE];
-        //__shared__ T shared_sum[WARP_SIZE];
         __shared__ T shared_sum[BLOCK_SIZE];
         const int sumId = warpId*WARP_SIZE + laneId;
 
@@ -211,14 +210,6 @@ namespace stencil2d_9pt {
 		//imgVerify.SaveText(szPath);
 		sprintf(szPath, "../data/Lena_proc_verify(%dx%d)_%dx%d.raw", FILTER_WIDTH, FILTER_HEIGHT, width, height);
 		//imgVerify.SaveRaw(szPath);
-#if 0
-		FILE* fp = fopen("log.conv2D.csv", "at");
-		if (fp) {
-			fprintf(fp, "%dx%d, %d_%d, %d, %dx%d, %f\n", width, height, PROCESS_DATA_COUNT, PROCESS_DATA_COUNT + FILTER_HEIGHT - 1, BLOCK_SIZE, FILTER_WIDTH, FILTER_HEIGHT, inc);
-			fclose(fp);
-		}
-		return inc;
-#endif
 	}
 };
 
