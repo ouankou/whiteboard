@@ -361,7 +361,7 @@ void shmoo(int minN, int maxN, int maxThreads, int maxBlocks,
                              cudaMemcpyHostToDevice));
 
   // warm-up
-    int kernel = 4;
+    int kernel = 6;
     reduce<T>(maxN, maxThreads, maxNumBlocks, kernel, d_idata, d_odata);
 
   int testIterations = 100;
@@ -420,7 +420,7 @@ template <class T>
 bool runTest(int argc, char **argv, ReduceType datatype) {
   int size = 1 << 24;    // number of elements to reduce
   int maxThreads = 256;  // number of threads per block
-  int whichKernel = 4;
+  int whichKernel = 6;
   int maxBlocks = 64;
   bool cpuFinalReduction = false;
   int cpuFinalThreshold = 1;
