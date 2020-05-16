@@ -71,37 +71,6 @@ struct SharedMemory<double> {
     This version uses n/2 threads --
     it performs the first level of reduction when reading from global memory.
 */
-template <class T>
-__global__ void reduce3(T *g_idata, T *g_odata, unsigned int n) {
-  // Handle to thread block group
-  cg::thread_block cta = cg::this_thread_block();
-  T *sdata = SharedMemory<T>();
-
-  // perform first level of reduction,
-  // reading from global memory, writing to shared memory
-  unsigned int tid = threadIdx.x;
-  unsigned int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
-
-  T mySum = (i < n) ? g_idata[i] : 0;
-
-  if (i + blockDim.x < n) mySum += g_idata[i + blockDim.x];
-
-  sdata[tid] = mySum;
-  cg::sync(cta);
-
-  // do reduction in shared mem
-  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-    if (tid < s) {
-      sdata[tid] = mySum = mySum + sdata[tid + s];
-    }
-
-    cg::sync(cta);
-  }
-
-  // write result for this block to global mem
-  if (tid == 0) g_odata[blockIdx.x] = mySum;
-}
-
 template <class T, unsigned int blockSize, bool nIsPow2>
 __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n) {
   // Handle to thread block group
@@ -136,19 +105,19 @@ __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n) {
   }
   __syncwarp();
   if(tid%32 == 0) {
-    sdata[blockIdx.x*8+tid/32] = mySum;
-    printf("sdata: %d mySum: %d\n",blockIdx.x*8+tid/32,mySum);
+    sdata[blockIdx.x*(blockSize/warpSize)+tid/32] = mySum;
   }
-   __syncwarp();
+  __syncwarp();
 
-   T mySum1 = 0;
-   if(tid==0){
-       mySum1 = sdata[blockIdx.x*8+0]+sdata[blockIdx.x*8+1]+sdata[blockIdx.x*8+2]
-       +sdata[blockIdx.x*8+3]+sdata[blockIdx.x*8+4]+sdata[blockIdx.x*8+5]+sdata[blockIdx.x*8+6]
-       +sdata[blockIdx.x*8+7]; 
-       //printf("blockid: %d  tid:%d  mySum1: %d\n",blockIdx.x,tid,mySum1);
-    }  
-   if(tid == 0){ g_odata[blockIdx.x] = mySum1;}
+  T mySum1 = 0;
+  if(tid == 0) {
+    for(int tmp = 0; tmp < blockSize/warpSize; tmp++) {
+      mySum1 += sdata[blockIdx.x*blockSize/warpSize+tmp];
+    }
+  }  
+  if(tid == 0) {
+    g_odata[blockIdx.x] = mySum1;
+  }
 }
 
 
@@ -166,116 +135,9 @@ void reduce(int size, int threads, int blocks, int whichKernel, T *d_idata,
   // when there is only one warp per block, we need to allocate two warps
   // worth of shared memory so that we don't index shared memory out of bounds
   int smemSize = 512* sizeof(T);
-     // (threads <= 32) ? 2 * threads * sizeof(T) : threads * sizeof(T);
   //reduction using shuffle
-            reduce6<T, 256, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-           /* break;
-      if (isPow2(size)) {
-        switch (threads) {
-          case 512:
-            reduce6<T, 512, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 256:
-            reduce6<T, 256, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 128:
-            reduce6<T, 128, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 64:
-            reduce6<T, 64, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 32:
-            reduce6<T, 32, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 16:
-            reduce6<T, 16, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 8:
-            reduce6<T, 8, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 4:
-            reduce6<T, 4, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 2:
-            reduce6<T, 2, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 1:
-            reduce6<T, 1, true>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-        }
-      } else {
-        switch (threads) {
-          case 512:
-            reduce6<T, 512, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 256:
-            reduce6<T, 256, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 128:
-            reduce6<T, 128, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 64:
-            reduce6<T, 64, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 32:
-            reduce6<T, 32, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 16:
-            reduce6<T, 16, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 8:
-            reduce6<T, 8, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 4:
-            reduce6<T, 4, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 2:
-            reduce6<T, 2, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-
-          case 1:
-            reduce6<T, 1, false>
-                <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
-            break;
-        }
-      }*/
+  reduce6<T, 256, true>
+    <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
 }
 
 // Instantiate the reduction function for 3 types

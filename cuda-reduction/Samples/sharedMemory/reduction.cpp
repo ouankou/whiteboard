@@ -345,7 +345,6 @@ void shmoo(int minN, int maxN, int maxThreads, int maxBlocks,
 
   int maxNumBlocks = MIN(maxN / maxThreads, MAX_BLOCK_DIM_SIZE);
 
-
   // allocate mem for the result on host side
   T *h_odata = (T *)malloc(maxNumBlocks * sizeof(T));
 
@@ -362,7 +361,7 @@ void shmoo(int minN, int maxN, int maxThreads, int maxBlocks,
                              cudaMemcpyHostToDevice));
 
   // warm-up
-    int kernel = 6;
+    int kernel = 3;
     reduce<T>(maxN, maxThreads, maxNumBlocks, kernel, d_idata, d_odata);
 
   int testIterations = 100;
@@ -421,7 +420,7 @@ template <class T>
 bool runTest(int argc, char **argv, ReduceType datatype) {
   int size = 1 << 24;    // number of elements to reduce
   int maxThreads = 256;  // number of threads per block
-  int whichKernel = 6;
+  int whichKernel = 3;
   int maxBlocks = 64;
   bool cpuFinalReduction = false;
   int cpuFinalThreshold = 1;

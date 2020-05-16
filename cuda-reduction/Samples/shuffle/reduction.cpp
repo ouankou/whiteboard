@@ -259,7 +259,12 @@ T benchmarkReduce(int n, int numThreads, int numBlocks, int maxThreads,
 
     // execute the kernel
     reduce<T>(n, numThreads, numBlocks, whichKernel, d_idata, d_odata);
+      checkCudaErrors(cudaMemcpy(h_odata, d_odata, numBlocks * sizeof(T),
+                                 cudaMemcpyDeviceToHost));
 
+      for (int i = 0; i < numBlocks; i++) {
+        gpu_result += h_odata[i];
+      }
     // check if kernel execution generated an error
     getLastCudaError("Kernel execution failed");
 
@@ -268,11 +273,6 @@ T benchmarkReduce(int n, int numThreads, int numBlocks, int maxThreads,
       // copy result from device to host
       checkCudaErrors(cudaMemcpy(h_odata, d_odata, numBlocks * sizeof(T),
                                  cudaMemcpyDeviceToHost));
-
-      for (int i = 0; i < numBlocks; i++) {
-        gpu_result += h_odata[i];
-      }
-
       needReadBack = false;
     } else {
       // sum partial block sums on GPU
@@ -298,7 +298,6 @@ T benchmarkReduce(int n, int numThreads, int numBlocks, int maxThreads,
         // copy result from device to host
         checkCudaErrors(cudaMemcpy(h_odata, d_odata, s * sizeof(T),
                                    cudaMemcpyDeviceToHost));
-
         for (int i = 0; i < s; i++) {
           gpu_result += h_odata[i];
         }
@@ -309,12 +308,6 @@ T benchmarkReduce(int n, int numThreads, int numBlocks, int maxThreads,
 
     cudaDeviceSynchronize();
     sdkStopTimer(&timer);
-  }
-
-  if (needReadBack) {
-    // copy final sum from device to host
-    checkCudaErrors(
-        cudaMemcpy(&gpu_result, d_odata, sizeof(T), cudaMemcpyDeviceToHost));
   }
   checkCudaErrors(cudaFree(d_intermediateSums));
   return gpu_result;
@@ -344,6 +337,7 @@ void shmoo(int minN, int maxN, int maxThreads, int maxBlocks,
   }
 
   int maxNumBlocks = MIN(maxN / maxThreads, MAX_BLOCK_DIM_SIZE);
+
 
   // allocate mem for the result on host side
   T *h_odata = (T *)malloc(maxNumBlocks * sizeof(T));
@@ -500,7 +494,7 @@ bool runTest(int argc, char **argv, ReduceType datatype) {
     // warm-up
     reduce<T>(size, numThreads, numBlocks, whichKernel, d_idata, d_odata);
 
-    int testIterations = 100;
+    int testIterations = 1;
 
     StopWatchInterface *timer = 0;
     sdkCreateTimer(&timer);
