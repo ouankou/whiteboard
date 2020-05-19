@@ -134,7 +134,7 @@ void reduce(int size, int threads, int blocks, int whichKernel, T *d_idata,
 
   // when there is only one warp per block, we need to allocate two warps
   // worth of shared memory so that we don't index shared memory out of bounds
-  int smemSize = 512* sizeof(T);
+  int smemSize = 8* sizeof(T);
   //reduction using shuffle
   reduce6<T, 256, true>
     <<<dimGrid, dimBlock, smemSize>>>(d_idata, d_odata, size);
