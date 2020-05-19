@@ -105,14 +105,14 @@ __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n) {
   }
   __syncwarp();
   if(tid%32 == 0) {
-    sdata[blockIdx.x*(blockSize/warpSize)+tid/32] = mySum;
+    sdata[tid/32] = mySum;
   }
   __syncwarp();
 
   T mySum1 = 0;
   if(tid == 0) {
     for(int tmp = 0; tmp < blockSize/warpSize; tmp++) {
-      mySum1 += sdata[blockIdx.x*blockSize/warpSize+tmp];
+      mySum1 += sdata[tmp];
     }
   }  
   if(tid == 0) {
