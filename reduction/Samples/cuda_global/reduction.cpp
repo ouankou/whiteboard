@@ -353,7 +353,8 @@ void shmoo(int minN, int maxN, int maxThreads, int maxBlocks,
   T *d_odata = NULL;
 
   checkCudaErrors(cudaMalloc((void **)&d_idata, bytes));
-  checkCudaErrors(cudaMalloc((void **)&d_odata, maxNumBlocks * sizeof(T)));
+  //checkCudaErrors(cudaMalloc((void **)&d_odata, maxNumBlocks * sizeof(T)));
+  checkCudaErrors(cudaMalloc((void **)&d_odata, bytes));
 
   // copy data directly to device memory
   checkCudaErrors(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
@@ -492,7 +493,8 @@ bool runTest(int argc, char **argv, ReduceType datatype) {
     T *d_odata = NULL;
 
     checkCudaErrors(cudaMalloc((void **)&d_idata, bytes));
-    checkCudaErrors(cudaMalloc((void **)&d_odata, numBlocks * sizeof(T)));
+    //checkCudaErrors(cudaMalloc((void **)&d_odata, numBlocks * sizeof(T)));
+    checkCudaErrors(cudaMalloc((void **)&d_odata, bytes));
 
     // copy data directly to device memory
     checkCudaErrors(

@@ -176,7 +176,6 @@ template <class T>
 __global__ void reduce3(T *g_idata, T *g_odata, unsigned int n) {
   // Handle to thread block group
   cg::thread_block cta = cg::this_thread_block();
-  //T *sdata = SharedMemory<T>();
 
   // perform first level of reduction,
   // reading from global memory, writing to shared memory
@@ -187,15 +186,13 @@ __global__ void reduce3(T *g_idata, T *g_odata, unsigned int n) {
 
   if (i + blockDim.x < n) mySum += g_idata[i + blockDim.x];
 
-  //sdata[tid] = mySum;
-  g_idata[i] = mySum;
+  g_odata[i] = mySum;
   cg::sync(cta);
 
   // do reduction in shared mem
   for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
     if (tid < s) {
-      //sdata[tid] = s2 = s2 + sdata[tid + s];
-      g_idata[i] = mySum = mySum + g_idata[i + s];
+      g_odata[i] = mySum = mySum + g_odata[i + s];
     }
     cg::sync(cta);
   }
