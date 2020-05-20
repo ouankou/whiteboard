@@ -169,7 +169,7 @@ __global__ void reduce2(T *g_idata, T *g_odata, unsigned int n) {
 }
 
 template <class T>
-__inline__ __device__ int warpReduceSum(T val) {
+__inline__ __device__ T warpReduceSum(T val) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
     val += __shfl_down_sync((unsigned int)-1, val, offset);
   return val;

@@ -169,14 +169,14 @@ __global__ void reduce2(T *g_idata, T *g_odata, unsigned int n) {
 }
 
 template <class T>
-__inline__ __device__ int warpReduceSum(T val) {
+__inline__ __device__ T warpReduceSum(T val) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
     val += __shfl_down_sync((unsigned int)-1, val, offset);
   return val;
 }
 
 template <class T>
-__inline__ __device__ int warpSharedReduceSum(T val) {
+__inline__ __device__ T warpSharedReduceSum(T val) {
   T *buffer = SharedMemory<T>();
   int lane = threadIdx.x % warpSize;
   int wid = threadIdx.x / warpSize;
@@ -212,7 +212,6 @@ __global__ void reduce3(T *g_idata, T *g_odata, unsigned int n) {
   if (i + blockDim.x < n) mySum += g_idata[i + blockDim.x];
 
   // do reduction using shuffle instruction
-  T s = warpReduceSum<T>(mySum);
   mySum = warpSharedReduceSum<T>(mySum);
   int lane = threadIdx.x % warpSize;
   int wid = threadIdx.x / warpSize;
