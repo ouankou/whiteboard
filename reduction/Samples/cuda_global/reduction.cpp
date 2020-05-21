@@ -422,7 +422,7 @@ template <class T>
 bool runTest(int argc, char **argv, ReduceType datatype) {
   int size = 1 << 24;    // number of elements to reduce
   int maxThreads = 256;  // number of threads per block
-  int whichKernel = 6;
+  int whichKernel = 3;
   int maxBlocks = 64;
   bool cpuFinalReduction = false;
   int cpuFinalThreshold = 1;
@@ -438,8 +438,6 @@ bool runTest(int argc, char **argv, ReduceType datatype) {
   if (checkCmdLineFlag(argc, (const char **)argv, "kernel")) {
     whichKernel = getCmdLineArgumentInt(argc, (const char **)argv, "kernel");
   }
-  // force to use kernel 3
-  whichKernel = 3;
 
   if (checkCmdLineFlag(argc, (const char **)argv, "maxblocks")) {
     maxBlocks = getCmdLineArgumentInt(argc, (const char **)argv, "maxblocks");
