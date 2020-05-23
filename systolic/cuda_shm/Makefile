@@ -51,7 +51,7 @@ $(info Reordered SOURCEFILES = $(SRCFILES))
 CUDA_HOME := $(HOME)/local/cuda-10.0
 NVCC := $(CUDA_HOME)/bin/nvcc
 #CXXFLAGS := -std=c++11 -Wall
-sm := 60 70
+sm := 37 60 70
 ARCHITECTURE=$(foreach s,$(sm), -gencode arch=compute_$(s),code=sm_$(s))
 #$(info ARCHITECTURE = $(ARCHITECTURE))
 #NVCCFLAGS +=--std=c++11 -m64 -Xcompiler -Wall -Xptxas -v -Wno-deprecated-gpu-targets -w
