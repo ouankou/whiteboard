@@ -50,48 +50,64 @@ namespace stencil2d_9pt {
 	
 		#pragma unroll
 		for (int i = 0; i < PROCESS_DATA_COUNT; i++) {
-			//T sum = data[i + 2] * fe1;
-            shared_sum[sumId] = data[i + 2] * fe1;
-            __syncwarp();
+			T sum = data[i + 2] * fe1;
+
+            //shared_sum[sumId] = data[i + 2] * fe1;
 			//sum = __my_shfl_down(sum, 1);
-            if (laneId != 31) 
-			shared_sum[sumId] = shared_sum[(sumId+1)];
+            shared_sum[sumId] = sum;
             __syncwarp();
+            if (laneId != 31) {
+			    shared_sum[sumId] = shared_sum[(sumId+1)];
+                __syncwarp();
 			//sum += data[i + 2] * fe0;
-			shared_sum[sumId] += data[i + 2] * fe0;
-            __syncwarp();
+                sum = shared_sum[sumId];
+            }
+			//shared_sum[sumId] += data[i + 2] * fe0;
+			sum += data[i + 2] * fe0;
 
 			//sum = __my_shfl_down(sum, 1);
-            if (laneId != 31) 
-			shared_sum[sumId] = shared_sum[(sumId+1)];
+            shared_sum[sumId] = sum;
             __syncwarp();
-			shared_sum[sumId] += data[i + 0] * fn1;
-            __syncwarp();
-			shared_sum[sumId] += data[i + 1] * fn0;
-            __syncwarp();
-			shared_sum[sumId] += data[i + 2] * fc;
-            __syncwarp();
-			shared_sum[sumId] += data[i + 3] * fs0;
-            __syncwarp();
-			shared_sum[sumId] += data[i + 4] * fs1;
-            __syncwarp();
+            if (laneId != 31) { 
+			    shared_sum[sumId] = shared_sum[(sumId+1)];
+                __syncwarp();
+                sum = shared_sum[sumId];
+            }
+			//shared_sum[sumId] += data[i + 0] * fn1;
+			//shared_sum[sumId] += data[i + 1] * fn0;
+			//shared_sum[sumId] += data[i + 2] * fc;
+			//shared_sum[sumId] += data[i + 3] * fs0;
+			//shared_sum[sumId] += data[i + 4] * fs1;
+			sum += data[i + 0] * fn1;
+			sum += data[i + 1] * fn0;
+			sum += data[i + 2] * fc;
+			sum += data[i + 3] * fs0;
+			sum += data[i + 4] * fs1;
 
 			//sum = __my_shfl_down(sum, 1);
-            if (laneId != 31) 
-			shared_sum[sumId] = shared_sum[(sumId+1)];
+            shared_sum[sumId] = sum;
             __syncwarp();
-			shared_sum[sumId] += data[i + 2] * fw0;
-            __syncwarp();
+            if (laneId != 31) {
+			    shared_sum[sumId] = shared_sum[(sumId+1)];
+                __syncwarp();
+                sum = shared_sum[sumId];
+            };
+			//shared_sum[sumId] += data[i + 2] * fw0;
+			sum += data[i + 2] * fw0;
 
 			//sum = __my_shfl_down(sum, 1);
-            if (laneId != 31) 
-			shared_sum[sumId] = shared_sum[(sumId+1)];
+            shared_sum[sumId] = sum;
             __syncwarp();
-			shared_sum[sumId] += data[i + 2] * fw1;
-            __syncwarp();
+            if (laneId != 31) { 
+			    shared_sum[sumId] = shared_sum[(sumId+1)];
+                __syncwarp();
+                sum = shared_sum[sumId];
+            }
+			//shared_sum[sumId] += data[i + 2] * fw1;
+			sum += data[i + 2] * fw1;
 
-			data[i] = shared_sum[sumId];
-            __syncwarp();
+			//data[i] = shared_sum[sumId];
+			data[i] = sum;
 		}
 
 		if (laneId >= WARP_SIZE - FILTER_WIDTH + 1)
@@ -118,7 +134,7 @@ namespace stencil2d_9pt {
 		const int BLOCK_PROCESS_DATA_COUNT = WARP_PROCESS_DATA_COUNT*WARP_COUNT;
         //__shared__ DataType shared_sum[WARP_SIZE];
 
-		const int nRepeatCount = 1;
+		const int nRepeatCount = 100;
 		float inc = 0;
 		cudaEvent_t start, stop;
 		cudaEventCreate(&start);
