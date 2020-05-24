@@ -48,7 +48,7 @@ $(info SOURCEFILES = $(SOURCEFILES))
 SRCFILES := $(filter %.cu %.cuh,$(SOURCEFILES)) $(filter-out %.cu %.cuh,$(SOURCEFILES))
 $(info Reordered SOURCEFILES = $(SRCFILES))
 ##########################################
-CUDA_HOME := $(HOME)/local/cuda-10.0
+CUDA_HOME := /usr/local/cuda
 NVCC := $(CUDA_HOME)/bin/nvcc
 #CXXFLAGS := -std=c++11 -Wall
 sm := 37 60 70
