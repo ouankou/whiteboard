@@ -10,6 +10,8 @@
 #define FILTER_WIDTH 5
 #define TEST 10
 #define PROBLEM 256
+#define PROBLEM_SIZE 768
+#define TEAM_SIZE 128
 
 // clang -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_35 --cuda-path=/usr/local/cuda -O3 -lpthread -fpermissive -msse4.1 stencil_metadirective.c -o stencil.out
 // Usage: ./stencil.out <size>
@@ -20,6 +22,7 @@ void ConvolutionMulti(const REAL* src, REAL* dst, int width, int height, const f
 void ConvolutionCPU(const REAL* src, REAL* dst, int width, int height, const float* filter, int flt_width, int flt_height);
 void ConvolutionWorksharing(const REAL* src, REAL* dst, int width, int height, const float* filter, int flt_width, int flt_height);
 void ConvolutionWorksharingUnroll(int width, int height, float fc,float fn0, float fs0, float fw0, float fe0, float fn1, float fs1, float fw1, float fe1, REAL *src, REAL *dst);
+void ConvolutionMetadirective(const REAL* src, REAL* dst, int width, int height, const float* filter, int flt_width, int flt_height);
 
 static double read_timer_ms() {
     struct timeb tm;
@@ -100,6 +103,7 @@ int main(int argc, char *argv[]) {
     //stencil(width, height, fc,fn0, fs0, fw0, fe0, fn1, fs1, fw1, fe1, u,result);
     for (int i = 0; i < TEST; i++) {
         //ConvolutionWorksharingUnroll(width, height, fc,fn0, fs0, fw0, fe0, fn1, fs1, fw1, fe1, u,result);
+        //ConvolutionMetadirective(u, result, width, height, filter[0], FILTER_WIDTH, FILTER_HEIGHT);
         ConvolutionWorksharing(u, result, width, height, filter[0], FILTER_WIDTH, FILTER_HEIGHT);
     };
     elapsed = read_timer_ms() - elapsed;
@@ -124,6 +128,30 @@ int main(int argc, char *argv[]) {
     free(result);
     return 0;
 }
+void ConvolutionMetadirective(const REAL* src, REAL* dst, int width, int height, const float* filter, int flt_width, int flt_height) {
+    int N = width*height; // total number of cells in a block
+//#pragma omp metadirective \
+    when (user={condition(N > PROBLEM_SIZE)}: /* GPU offloading */ \
+        target teams distribute parallel for map(to: src[0:N], filter[0:flt_width*flt_height]) map(from: dst[0:N]) num_teams(N/TEAM_SIZE) num_threads(TEAM_SIZE)) \
+    default (parallel for) /* CPU parallel */
+    for (int i = 0; i < N; i++) {
+        int h = i / width; // block height
+        int w = i % width; // block width
+        REAL sum = 0;
+        for (int n = 0; n < flt_width; n++) {
+            for (int m = 0; m < flt_height; m++) {
+                int x = w + n - flt_width / 2;
+                int y = h + m - flt_height / 2;
+                if (x >= 0 && x < width && y >= 0 && y < height) {
+                    int idx = m*flt_width + n;
+                    sum += src[y*width + x] * filter[idx];
+                }
+            }
+        }
+        dst[h*width + w] = sum;
+    }
+}
+
 
 void Convolution(const REAL* src, REAL* dst, int width, int height, const float* filter, int flt_width, int flt_height)
 {
@@ -199,25 +227,22 @@ void ConvolutionWorksharing(const REAL* src, REAL* dst, int width, int height, c
     int N = width*height;
     int BLOCK_SIZE = 128;
 
-#pragma omp target teams distribute parallel for map(to: src[0:N], filter[0:flt_size]) map(from: dst[0:N]) num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE)
-//#pragma omp target teams distribute parallel for map(from: dst[0:N]) num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE)
-//#pragma omp target teams distribute parallel for num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE)
-    for (int t = 0; t < N; t++) {
-        int h = t / width; // height
-        int w = t % width; // width
-
-        REAL sum = 0;
-        for (int n = 0; n < flt_width; n++) {
-            for (int m = 0; m < flt_height; m++) {
-                int x = w + n - flt_width / 2;
-                int y = h + m - flt_height / 2;
-                if (x >= 0 && x < width && y >= 0 && y < height) {
-                    int idx = m*flt_width + n;
-                    sum += src[y*width + x] * filter[idx];
+#pragma omp target teams distribute parallel for map(to: src[0:N], filter[0:flt_size]) map(from: dst[0:N]) num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE) collapse(2)
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            REAL sum = 0;
+            for (int n = 0; n < flt_width; n++) {
+                for (int m = 0; m < flt_height; m++) {
+                    int x = j + n - flt_width / 2;
+                    int y = i + m - flt_height / 2;
+                    if (x >= 0 && x < width && y >= 0 && y < height) {
+                        int idx = m*flt_width + n;
+                        sum += src[y*width + x] * filter[idx];
+                    }
                 }
             }
+            dst[i*width + j] = sum;
         }
-        dst[h*width + w] = sum;
     }
 }
 
@@ -226,7 +251,7 @@ void ConvolutionCPU(const REAL* src, REAL* dst, int width, int height, const flo
 {
     int flt_size = flt_width*flt_height;
 
-#pragma omp parallel for
+#pragma omp parallel for collapse(2)
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             REAL sum = 0;
