@@ -8,12 +8,13 @@
 #define REAL float
 #define FILTER_HEIGHT 5
 #define FILTER_WIDTH 5
-#define TEST 10
+#define TEST 100
 #define PROBLEM 256
 #define PROBLEM_SIZE 768
 #define TEAM_SIZE 128
 
 // clang -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_35 --cuda-path=/usr/local/cuda -O3 -lpthread -fpermissive -msse4.1 stencil_metadirective.c -o stencil.out
+// clang -fopenmp -fopenmp-targets=nvptx64 stencil_metadirective.c -o stencil.out
 // Usage: ./stencil.out <size>
 // e.g. ./stencil.out 512
 
@@ -225,9 +226,9 @@ void ConvolutionWorksharing(const REAL* src, REAL* dst, int width, int height, c
 	
 	int flt_size = flt_width*flt_height;
     int N = width*height;
-    int BLOCK_SIZE = 128;
 
-#pragma omp target teams distribute parallel for map(to: src[0:N], filter[0:flt_size]) map(from: dst[0:N]) num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE) collapse(2)
+//#pragma omp target teams distribute parallel for map(to: src[0:N], filter[0:flt_size]) map(from: dst[0:N]) num_teams(N/BLOCK_SIZE) num_threads(BLOCK_SIZE) collapse(2)
+#pragma omp target teams distribute parallel for map(to: src[0:N], filter[0:flt_size]) map(from: dst[0:N]) collapse(2)
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             REAL sum = 0;
