@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/timeb.h>
 #include "sum.h"
+#define TEST 20
 
 double read_timer_ms() {
     struct timeb tm;
@@ -14,9 +15,7 @@ double read_timer_ms() {
     return (double) tm.time * 1000.0 + (double) tm.millitm;
 }
 
-/* change this to do saxpy or daxpy : single precision or double precision*/
 #define REAL double
-#define VEC_LEN 1024000 //use a fixed number for now
 /* zero out the entire vector */
 void zero(REAL *A, int n)
 {
@@ -60,7 +59,7 @@ REAL sum_omp_cpu(REAL* input, int n) {
 REAL check(REAL*A, REAL*B, int n)
 {
     int i;
-    REAL diffsum =0.0, sum = 0.0;
+    REAL diffsum = 0.0, sum = 0.0;
     for (i = 0; i < n; i++) {
         diffsum += fabs(A[i] - B[i]);
         sum += fabs(B[i]);
@@ -70,17 +69,19 @@ REAL check(REAL*A, REAL*B, int n)
 
 int main(int argc, char *argv[]) {
     int n = 512;
+    int kernel = 0;
     REAL *output_device, *output, *input, sum;
 
-    if (argc >= 2) {
+    if (argc > 2) {
         n = atoi(argv[1]);
+        kernel = atoi(argv[2]);
     }
     else {
         printf("Usage: ./sum <n>\n");
         printf("Default size: n = 512\n");
     };
     output_device = (REAL *) malloc(n * sizeof(REAL));
-    output  = (REAL *) malloc(n * sizeof(REAL));
+    output = (REAL *) malloc(n * sizeof(REAL));
     input = (REAL *) malloc(n * sizeof(REAL));
 
     srand48(1<<12);
@@ -92,14 +93,32 @@ int main(int argc, char *argv[]) {
     printf("CPU serial vs omp: %g, %g, %g\n", res_serial, res_omp_cpu, res_serial - res_omp_cpu);
 
     int i;
-    int num_runs = 1;
     /* cuda version */
-    REAL res_cuda;
-    double elapsed = read_timer_ms();
-    for (i=0; i<num_runs; i++) {
-        res_cuda = sum_kernel(input, n, 1);
+    if (kernel == -1) {
+        for (i = 0; i < TEST; i++) {
+            sum_kernel(input, n, 0);
+            sum_kernel(input, n, 1);
+            sum_kernel(input, n, 2);
+        };
+        free(output_device);
+        free(output);
+        free(input);
+        return 0;
     };
-    elapsed = (read_timer_ms() - elapsed)/num_runs;
+
+    REAL res_cuda;
+    /*
+    // warm up
+    for (i = 0; i < 10; i++) {
+        res_cuda = sum_kernel(input, n, kernel);
+    };
+    */
+    double elapsed = read_timer_ms();
+    for (i = 0; i < TEST; i++) {
+        res_cuda = sum_kernel(input, n, kernel);
+    };
+    elapsed = (read_timer_ms() - elapsed)/TEST;
+    printf("GPU kernel %d: %g\n", kernel, elapsed);
     printf("CPU omp vs GPU: %g, %g, %g\n", res_omp_cpu, res_cuda, res_cuda - res_omp_cpu);
 
     //REAL checkresult = check(res_serial, output_device, n);
@@ -109,5 +128,5 @@ int main(int argc, char *argv[]) {
     free(output_device);
     free(output);
     free(input);
-  return 0;
+    return 0;
 }
