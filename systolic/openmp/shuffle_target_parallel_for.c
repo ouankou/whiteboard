@@ -77,7 +77,7 @@ int main (int argc, char** argv) {
     int i;
     omp_set_nested(1);
 //#pragma omp target map(to: src[0:width*height], fc, fn0, fn1, fw1, fw0, fe1, fe0, fs1, fs0, height, width) map(from: dst[0:width*height])
-//#pragma omp parallel for num_threads(2)
+#pragma omp parallel for num_threads(2)
     for (i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j += 4)

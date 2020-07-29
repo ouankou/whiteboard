@@ -89,9 +89,9 @@ class MatrixTranspose
             output = NULL;
             verificationOutput = NULL;
             //blockSize = 16;
-            blockSize = 4;
-            width = 256;
-            height = 256;
+            blockSize = 128;
+            width = 4096;
+            height = 4096;
             setupTime = 0;
             totalKernelTime = 0;
             iterations = 1;

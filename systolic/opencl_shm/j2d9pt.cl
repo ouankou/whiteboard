@@ -4,8 +4,8 @@
 
 __kernel void j2d9pt(__global float4 * dst, __global float4 * src, __local float4 * block)
 {
-    const int width = 256;
-    const int height = 256;
+    const int width = 4096;
+    const int height = 4096;
     const int BLOCK_SIZE = 128;
     const int PROCESS_DATA_COUNT = 4;
     const int WARP_SIZE = 32;

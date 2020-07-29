@@ -92,7 +92,7 @@ namespace stencil2d_9pt {
 		const int WARP_PROCESS_DATA_COUNT = WARP_SIZE - FILTER_WIDTH + 1;
 		const int BLOCK_PROCESS_DATA_COUNT = WARP_PROCESS_DATA_COUNT*WARP_COUNT;
 
-		const int nRepeatCount = 1;
+		const int nRepeatCount = 100;
 		float inc = 0;
 		cudaEvent_t start, stop;
 		cudaEventCreate(&start);

@@ -17,6 +17,31 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include "MatrixTranspose.hpp"
 
+#define REAL float
+
+void Convolution(const REAL* src, REAL* dst, int width, int height, const REAL* filter, int flt_width, int flt_height)
+{
+	int flt_size = flt_width*flt_height;
+
+#pragma omp parallel for
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			REAL sum = 0;
+			for (int n = 0; n < flt_width; n++) {
+				for (int m = 0; m < flt_height; m++) {
+					int x = j + n - flt_width / 2;
+					int y = i + m - flt_height / 2;
+					if (x >= 0 && x < width && y >= 0 && y < height) {
+						int idx = m*flt_width + n;
+						sum += src[y*width + x] * filter[idx];
+					}
+				}
+			}
+			dst[i*width + j] = sum;
+		}
+	}
+}
+
 int
 MatrixTranspose::setupMatrixTranspose()
 {
@@ -207,16 +232,17 @@ MatrixTranspose::setupCL(void)
     // each work item is going to work on [elemsPerThread1Dim x elemsPerThread1Dim] matrix elements,
     // therefore the total size of needed local memory is calculated as
     // # of WIs in a group multiplied by # of matrix elements per a WI
-    neededLocalMemory    = blockSize * blockSize * elemsPerThread1Dim *
+    neededLocalMemory    = blockSize * 1 * elemsPerThread1Dim *
                            elemsPerThread1Dim * sizeof(cl_float);
 
+    
     if(neededLocalMemory > availableLocalMemory)
     {
         std::cout << "Unsupported: Insufficient local memory on device." << std::endl;
         return SDK_EXPECTED_FAILURE;
     }
 
-    if((cl_uint)(blockSize * blockSize) > kernelInfo.kernelWorkGroupSize)
+    if((cl_uint)(blockSize * 1) > kernelInfo.kernelWorkGroupSize)
     {
         if(kernelInfo.kernelWorkGroupSize >= 64)
         {
@@ -235,10 +261,11 @@ MatrixTranspose::setupCL(void)
             return SDK_FAILURE;
         }
     }
+    
 
     if(blockSize > deviceInfo.maxWorkItemSizes[0] ||
             blockSize > deviceInfo.maxWorkItemSizes[1] ||
-            (size_t)blockSize * blockSize > deviceInfo.maxWorkGroupSize)
+            (size_t)blockSize * 1 > deviceInfo.maxWorkGroupSize)
     {
         std::cout <<
                   "Unsupported: Device does not support requested number of work items." <<
@@ -258,7 +285,7 @@ MatrixTranspose::runCLKernels(void)
     // every thread in [blockSize x blockSize] workgroup will execute [elemsPerThread1Dim x elemsPerThread1Dim] elements
     size_t globalThreads[2]= {width/elemsPerThread1Dim, height/elemsPerThread1Dim};
 
-    blockSize = 128;
+    //blockSize = 128;
     if(blockSize > globalThreads[0])
     {
         blockSize = (cl_uint)globalThreads[0];
@@ -582,6 +609,27 @@ MatrixTranspose::run()
     {
         printArray<cl_float>("Output", output, width, 1);
     }
+
+    // test results
+    int FILTER_HEIGHT = 5;
+    int FILTER_WIDTH = 5;
+    REAL filter[FILTER_HEIGHT][FILTER_WIDTH] = {
+        { 0,  0, 1, 0, 0, },
+        { 0,  0, 2, 0, 0, },
+        { 3,  4, 5, 6, 7, },
+        { 0,  0, 8, 0, 0, },
+        { 0,  0, 9, 0, 0, },
+    };
+    REAL* verify_data = (REAL*)malloc(width * height * sizeof(REAL));
+    Convolution(output, verify_data, width, height, filter[0], FILTER_WIDTH, FILTER_HEIGHT);
+    double dif = 0;
+	for (int i = 0; i < width*height; i++) {
+		int x = i % width;
+		int y = i / width;
+		if (x > FILTER_WIDTH/2 && x < width - FILTER_WIDTH/2 && y > FILTER_HEIGHT/2 && y < height - FILTER_HEIGHT/2)
+			dif += abs(verify_data[i] - output[i]);
+	}
+	printf("verify dif =%f\n", dif);
 
     return SDK_SUCCESS;
 }

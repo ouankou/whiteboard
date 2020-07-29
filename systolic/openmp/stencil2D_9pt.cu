@@ -14,92 +14,124 @@ namespace stencil2d_9pt {
         // mini warp: 8 threads: 4 for data points, 4 as helper
 		const int PROCESS_DATA_COUNT = 4;
 		const int DATA_CACHE_SIZE = PROCESS_DATA_COUNT + FILTER_HEIGHT - 1;
+        REAL filter[FILTER_HEIGHT][FILTER_WIDTH] = {
+			{ 0,  0, 1, 0, 0, },
+			{ 0,  0, 2, 0, 0, },
+			{ 3,  4, 5, 6, 7, },
+			{ 0,  0, 8, 0, 0, },
+			{ 0,  0, 9, 0, 0, },
+		};
+        int flt_width = 5;
+        int flt_height = 5;
         int i, j, k;
 #pragma omp parallel for num_threads(2)
         for (i = 0; i < height; i++)
         {
 #pragma omp parallel for num_threads(4)
-            for (j = 0; j < width; j += 4)
+            for (j = 0; j < width; j += 1)
             {
                 //REAL sum[PROCESS_DATA_COUNT];
                 REAL sum[DATA_CACHE_SIZE];
-#pragma omp parallel for num_threads(8) ordered
-                for (k = 0; k < DATA_CACHE_SIZE; k++)
-                {
+//#pragma omp parallel for num_threads(8) ordered
+                //for (k = 0; k < DATA_CACHE_SIZE; k++)
+                //{
+                    REAL sum1 = 0;
+                    /*
+			for (int n = 0; n < flt_width; n++) {
+				for (int m = 0; m < flt_height; m++) {
+					int x = j + n - flt_width / 2;
+					int y = i + m - flt_height / 2;
+					if (x >= 0 && x < width && y >= 0 && y < height) {
+						//buf[m*flt_width + n] = src[y*width + x];
+						int idx = m*flt_width + n;
+						sum1 += src[y*width + x] * filter[m][n];
+					}
+				}
+			}*/
+                    
                     int p, idx_x, idx_y;
-                    REAL data[DATA_CACHE_SIZE];
+                    REAL data[DATA_CACHE_SIZE + 1];
                     int tidy = i;
-                    int tidx = j + k;
-                    int index = tidx * width + tidy;
-                    if (tidx < 0)            index -= tidx;
-                    else if (tidx >= width)  index -= tidx - width + 1;
-                    if (tidy < 0)            index -= tidy*width;
-                    else if (tidy >= height) index -= (tidy - height + 1)*width;
+                    int tidx = j;
+                    int index = tidy * width + tidx;
+                    /*
+                    if (tidx < 0)               index -= tidx;
+                    else if (tidx >= width)     index -= tidx - width + 1;
+                    if (tidy < 0)               index -= tidy*width;
+                    else if (tidy >= height)    index -= (tidy - height + 1)*width;
                     for (p = 0; p < FILTER_HEIGHT; p++)
                     {
-                        /*
-                        idx_y = i - 2 + p;
-                        if (idx_y < 0)
-                        {
-                           idx_y = 0;
-                        }
-                        else if (idx_y >= height)
-                        {
-                            idx_y = height - 1;
+                        int _tidy = tidy + p;
+                        //printf("get src: %d, %d --- %d\n", tidy, tidx, index);
+                        //printf("array size: %d\n", sizeof(*src));
+                        data[p] = src[index];
+                        //printf("done get src\n");
+                        if (_tidy >= 0 && _tidy < height - 1) {
+                            index += width;
                         };
-                        idx_x = j + k;
-                        if (idx_x < 0)
-                        {
-                           idx_x = 0;
-                        }
-                        else if (idx_x >= width)
-                        {
-                            idx_x = width - 1;
-                        };
-                        data[p] = src[idx_y * width + idx_x];
-                        */
-                        int _tidx = tidx + p;
-				        data[p] = src[index];
-				        if (_tidx >= 0 && _tidx < width - 1) {
-					        index += 1;
-				        };
                     };
-                    int tid = omp_get_thread_num();
-                    sum[tid] = data[2] * fe1;
+                    */
+                    data[2] = src[index];
+                    // read vertical
+                    if (tidy - 2 < 0) data[0] = src[tidx];
+                    else data[0] = src[index - 2*width];
+                    if (tidy - 1 < 0) data[1] = src[tidx];
+                    else data[1] = src[index - width];
+                    if (tidy + 1 >= height) data[3] = src[index];
+                    else data[3] = src[index + width];
+                    if (tidy + 2 >= height) data[4] = src[index];
+                    else data[4] = src[index + 2*width];
+
+                    // read horizontal
+                    if (tidx - 1 < 0) data[5] = src[index];
+                    else data[5] = src[index - 1];
+                    if (tidx - 2 < 0) data[6] = src[index];
+                    else data[6] = src[index - 2];
+                    if (tidx + 1 >= width) data[7] = src[index];
+                    else data[7] = src[index + 1];
+                    if (tidx + 2 >= width) data[8] = src[index];
+                    else data[8] = src[index + 2];
+                    //int tid = omp_get_thread_num();
+                    int tid = 0;
+                    sum[tid] = data[8] * fe1;
                     // shuffle
-#pragma omp ordered threads
-                    if (tid < 8)
-                    {
-                        sum[tid] = sum[tid + 1];
-                    };
-                    sum[tid] += data[2] * fe0;
-#pragma omp ordered threads
-                    if (tid < 8)
-                    {
-                        sum[tid] = sum[tid + 1];
-                    };
+//#pragma omp ordered threads
+ //                   if (tid < 8)
+ //                   {
+ //                       sum[tid] = sum[tid + 1];
+ //                   };
+                    sum[tid] += data[7] * fe0;
+//#pragma omp ordered threads
+ //                   if (tid < 8)
+  //                  {
+   //                     sum[tid] = sum[tid + 1];
+   //                 };
                     sum[tid] += data[0] * fn1;
                     sum[tid] += data[1] * fn0;
                     sum[tid] += data[2] * fc;
                     sum[tid] += data[3] * fs0;
                     sum[tid] += data[4] * fs1;
-#pragma omp ordered threads
+//#pragma omp ordered threads
+//                    if (tid < 8)
+//                    {
+//                        sum[tid] = sum[tid + 1];
+//                    };
+                    sum[tid] += data[5] * fw0;
+                    sum[tid] += data[6] * fw1;
+/*#pragma omp ordered threads
                     if (tid < 8)
                     {
                         sum[tid] = sum[tid + 1];
                     };
-                    sum[tid] += data[2] * fw0;
-#pragma omp ordered threads
-                    if (tid < 8)
-                    {
-                        sum[tid] = sum[tid + 1];
-                    };
-                    sum[tid] += data[2] * fw1;
+                    sum[tid] += data[6] * fw1;
                 };
                 for (k = 0; k < 4; k++)
                 {
+                    //printf("save to dst\n");
                     dst[i * width + j + k] = sum[k];
-                };
+                    //printf("done save to dst\n");
+                };*/
+            dst[i*width + j] = sum[0];
             };
         };
 	}
