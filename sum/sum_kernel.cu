@@ -19,7 +19,7 @@ global_1perThread(REAL* data, int n) {
 /* second level of reduction */
 __global__
 void
-global_final_reduce_1perThread(REAL* data, int n) {
+global_final_reduce(REAL* data, int n) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     int stride = n/2;
     if (n%2 == 1) {
@@ -90,7 +90,7 @@ void final_reduce(REAL* data_device, int n) {
         residue = BLOCK_NUM*BLOCK_SIZE;
     };
     while (residue > 1) {
-        global_final_reduce_1perThread<<<(residue+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(data_device, residue);
+        global_final_reduce<<<(residue+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(data_device, residue);
         if (residue%2 == 1) {
             residue = residue/2 + 1;
         }
