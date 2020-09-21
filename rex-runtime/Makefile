@@ -16,6 +16,9 @@ default: cudakernel_fatbinwrapper
 cudakernel_fatbinwrapper: axpy_cudakernel.cu
 	nvcc -cubin -g -arch ${CUDA_ARCH} axpy_cudakernel.cu
 
+trans_omp_parallel.out: transformed_omp_parallel.c
+	clang -fopenmp transformed_omp_parallel.c -o trans_omp_parallel.out
+
 clean: 
-		rm -rf ${OBJS} *.cubin *.out
+	rm -rf ${OBJS} *.cubin *.out
 
