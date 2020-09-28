@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <omp.h>
+#include "rex_kmp.h"
 
 void outlined_function() {
 	int id = omp_get_thread_num();
