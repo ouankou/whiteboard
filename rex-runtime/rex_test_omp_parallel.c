@@ -2,7 +2,7 @@
 #include <omp.h>
 #include "rex_kmp.h"
 
-void outlined_function() {
+void outlined_function(int* global_id, int* bound_id) {
 	int id = omp_get_thread_num();
 	int num_threads = omp_get_num_threads();
    	printf("Hello World from thread %d of %d!\n", id, num_threads);
