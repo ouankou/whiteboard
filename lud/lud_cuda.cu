@@ -6,6 +6,8 @@
 #include <cooperative_groups.h>
 #include <sys/timeb.h>
 
+#define NUM_RUNS 100
+
 // read timer in second
 double read_timer() {
     struct timeb tm;
@@ -100,22 +102,27 @@ int main(int argc, char** argv) {
         printf("Currently, n can only be up to 1024.\n");
         return 1;
     };
-    double* matrix = make2d(n);
-    double* dev_matrix; 
-    initializeVersion2(matrix, n);
-    size_t cap = n * n * sizeof(double);
-    int num_blocks = n, threads_per_block = n, k;
+    int i;
+    double* matrix = NULL;
+    double* dev_matrix = NULL;
 
     double start = read_timer();
 
-    cudaMalloc((void**)&dev_matrix, cap);
-    cudaMemcpy(dev_matrix, matrix, cap, cudaMemcpyHostToDevice);
-    // LUD outer loop
-    for (k = 0; k < n - 1; k++) {
-        lud_kernel<<<num_blocks, threads_per_block>>>(dev_matrix, n, k);
-    };
-    cudaDeviceSynchronize();
-    cudaMemcpy(matrix, dev_matrix, cap, cudaMemcpyDeviceToHost);
+    for (i = 0; i < NUM_RUNS; i++) {
+        matrix = make2d(n);
+        initializeVersion2(matrix, n);
+        size_t cap = n * n * sizeof(double);
+        int num_blocks = n, threads_per_block = n, k;
+
+        cudaMalloc((void**)&dev_matrix, cap);
+        cudaMemcpy(dev_matrix, matrix, cap, cudaMemcpyHostToDevice);
+        // LUD outer loop
+        for (k = 0; k < n - 1; k++) {
+            lud_kernel<<<num_blocks, threads_per_block>>>(dev_matrix, n, k);
+        };
+        cudaDeviceSynchronize();
+        cudaMemcpy(matrix, dev_matrix, cap, cudaMemcpyDeviceToHost);
+    }
 
     double total_time = read_timer() - start;
 

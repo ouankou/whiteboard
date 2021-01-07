@@ -7,31 +7,31 @@ lud_cuda.out: lud_cuda.cu
 	nvcc lud_cuda.cu -o lud_cuda.out
 
 lud_parallel_for.out: main.o parallel_for.o
-	clang main.o parallel_for.o -o lud_parallel_for.out -fopenmp
+	xlc main.o parallel_for.o -o lud_parallel_for.out -qsmp=omp
 
 lud_simd.out: main.o simd.o
-	clang main.o simd.o -o lud_simd.out -fopenmp
+	xlc main.o simd.o -o lud_simd.out -qsmp=omp
 
 lud_nested.out: main.o parallel_for_simd_nested.o
-	clang main.o parallel_for_simd_nested.o -o lud_nested.out -fopenmp
+	xlc main.o parallel_for_simd_nested.o -o lud_nested.out -qsmp=omp
 
 lud_target_parallel_for.out: main.c target_parallel_for.c
-	clang -fopenmp -fopenmp-targets=nvptx64 main.c target_parallel_for.c -o lud_target_parallel_for.out
+	xlc main.c target_parallel_for.c -o lud_target_parallel_for.out -qsmp=omp -qoffload
 
 main.o: main.c
-	clang -c main.c -o main.o
+	xlc -c main.c -o main.o
 
 simd.o: simd.c
-	clang -c simd.c -o simd.o -fopenmp -mavx2
+	xlc -c simd.c -o simd.o -qsmp=omp
 
 parallel_for.o: parallel_for.c
-	clang -c parallel_for.c -o parallel_for.o -fopenmp
+	xlc -c parallel_for.c -o parallel_for.o -qsmp=omp
 
 parallel_for_simd_nested.o: parallel_for_simd_nested.c
-	clang -c parallel_for_simd_nested.c -o parallel_for_simd_nested.o -fopenmp -mavx2
+	xlc -c parallel_for_simd_nested.c -o parallel_for_simd_nested.o -qsmp=omp
 
 target_parallel_for.o: target_parallel_for.c
-	clang -c target_parallel_for.c -o target_parallel_for.o -fopenmp -fopenmp-targets=nvptx64
+	xlc -c target_parallel_for.c -o target_parallel_for.o -qsmp=omp -qoffload
 
 clean:
-	rm -rf *.out *.o *.log *.csv
+	rm -rf *.out *.o *.log
